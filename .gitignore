@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*ed25519*
+server-access/
+backups/
+node_modules/
+.DS_Store
