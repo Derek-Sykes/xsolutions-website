@@ -18,6 +18,9 @@
 
 ## Final placeholder cleanup release
 
-The temporary comment is removed in this revision. A third dev-to-main release will verify restoration of the original page content. The separate landing-page redesign is excluded from these releases and must remain dev-only until the owner authorizes publication.
+- PR #3 merged at `14b6f10f8cfb0effc26c30a4eedf61a58cb646b2`; [workflow 34320527079](https://github.com/Derek-Sykes/xsolutions-website/actions/runs/34320527079) succeeded and restored the placeholder without the temporary marker.
+- The separate clone also advanced to `94d8500` through the Bash updater and served the restored page. Its temporary container/network were removed afterward.
+- This test revealed that discovery through GitHub's latest-release URL can lag publication. The installed updater now checks main directly and requests its exact release URL with cache avoidance. A not-yet-published release keeps the existing website running and is retried on the next timer check. A fourth release verifies this refinement.
+- The replacement landing page was excluded from these infrastructure tests. Derek subsequently authorized publishing the finished page after workflow tests and builder QA; that is a separate reviewed release.
 
 Main is protected with a required pull request and `Check website container`, including administrators. Production accepts main only. Repository auto-merge is off. The updater's failure rollback exists but has not been fault-injected against the production server.
