@@ -44,3 +44,11 @@ Main is protected with a required pull request and `Check website container`, in
 - Email and phone destinations are `xsolutionsmd@gmail.com` and `+14437975882`. Their links were verified without sending an email or placing a call. There is no inquiry form or backend; inbox delivery and call answering were not tested.
 
 Five automatic main releases succeeded, including the actual finished page. Workflow setup and initial page publication are complete. Future main merges still require separate release authorization.
+
+## Business phone update — September 9, 2026
+
+- The user explicitly authorized this small fix to progress through dev verification and main merge without another approval. Displayed phone is now `667-383-5993`; the tap-to-call destination is `tel:+16673835993`, superseding the earlier release's number.
+- Tested dev revision `ee30d9d62a2253421c08878917321f312e87462b` passed local `website.ps1 check` (container configuration, served HTML and core assets, revision identity and Git-source exclusion). A separate assertion confirmed the new phone text and link and absence of the old number in the page. No call was placed.
+- Dev push [workflow 34369884555](https://github.com/Derek-Sykes/xsolutions-website/actions/runs/34369884555) and [PR #6](https://github.com/Derek-Sykes/xsolutions-website/pull/6) checks passed before the normal protected merge to main `faf997523c1f84b25d79a55ee4d8c1bcd9e74dfe`.
+- Main [workflow 34369948834](https://github.com/Derek-Sykes/xsolutions-website/actions/runs/34369948834) succeeded, including automatic Oracle deployment and live verification. Independent HTTPS requests confirmed the exact revision, complete HTML equality with the tested page, and the new displayed number and tap-to-call link.
+- This was a phone-text/link substitution with no layout or behavior changes; no new browser layout review was performed. Call answering and external advertising accounts were not tested or changed.
