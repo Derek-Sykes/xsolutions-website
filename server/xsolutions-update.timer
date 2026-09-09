@@ -1,0 +1,11 @@
+[Unit]
+Description=Check for a published X Solutions release every minute
+
+[Timer]
+OnBootSec=30s
+OnUnitInactiveSec=60s
+AccuracySec=5s
+Unit=xsolutions-update.service
+
+[Install]
+WantedBy=timers.target

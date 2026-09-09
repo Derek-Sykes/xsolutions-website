@@ -1,0 +1,6 @@
+**
+!Dockerfile
+!Caddyfile
+!Caddyfile.local
+!xsolutions-site/
+!xsolutions-site/**

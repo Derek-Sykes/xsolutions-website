@@ -1,0 +1,10 @@
+:80 {
+    root * /srv
+    encode zstd gzip
+    header Cache-Control "no-store"
+    file_server
+}
+:8081 {
+    root * /srv
+    file_server
+}

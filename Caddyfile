@@ -7,6 +7,14 @@ xsolutionsmd.com {
         X-Frame-Options DENY
     }
     file_server
+    @version path /version.json
+    header @version Cache-Control "no-store"
+}
+
+# Container health endpoint; not published on the host.
+:8081 {
+    root * /srv
+    file_server
 }
 
 www.xsolutionsmd.com {
