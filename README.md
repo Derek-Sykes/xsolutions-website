@@ -47,7 +47,7 @@ dev → reviewed merge into main → container checks
     → GitHub confirms live revision and page content
 ```
 
-Oracle's small system timer checks published releases about once a minute. Builds and tests happen on GitHub's machines. Expect a few minutes from merge to completed deployment. Your computers can be off.
+Oracle's small system timer checks main about once a minute and downloads that exact commit's published release when ready. Builds and tests happen on GitHub's machines. Expect a few minutes from merge to completed deployment. Your computers can be off.
 
 The server uses outbound HTTPS and public release/image downloads. No GitHub runner, GitHub credential or additional SSH port is installed on Oracle. Source and image contain only the public site and safe configuration. GitHub uses its temporary workflow token to publish.
 
