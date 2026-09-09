@@ -1,57 +1,96 @@
 # X Solutions website
 
-The existing static coming-soon page at https://xsolutionsmd.com/, served by Caddy in Docker Compose. The full business website is future work.
+The website at **https://xsolutionsmd.com**, served by a versioned Caddy container on Oracle. Work on `dev`; merge `dev` into `main` when you want to publish.
+
+## Start on a desktop or laptop
+
+Install Git and Docker Desktop (Linux containers), then clone once:
+
+```bash
+git clone --branch dev https://github.com/Derek-Sykes/xsolutions-website.git
+cd xsolutions-website
+bash start.sh
+```
+
+Open **http://localhost:8787**. Edit public files in `xsolutions-site/`, then run `bash start.sh` again to rebuild and see changes. Each computer has its own clone; Git transfers committed changes between them.
+
+| Task | Bash (Git Bash, Linux, macOS, WSL) | Windows PowerShell |
+|---|---|---|
+| Build container | `bash build.sh` | `.\website.ps1 build` |
+| Build and start preview | `bash start.sh` | `.\website.ps1 start` |
+| Pull current branch, rebuild and start | `bash update.sh` | `.\website.ps1 update` |
+| Stop preview | `bash stop.sh` | `.\website.ps1 stop` |
+| Check container and public files | `bash scripts/site.sh check` | `.\website.ps1 check` |
+| View status / logs | `bash scripts/site.sh status` / `logs` | `.\website.ps1 status` / `logs` |
+
+If Windows blocks the PowerShell script, use Git Bash or `powershell -ExecutionPolicy Bypass -File .\website.ps1 start` for that invocation. No permanent policy change is needed.
+
+Update follows the currently selected `dev` or `main` branch. It refuses uncommitted changes, feature branches and diverged history instead of overwriting work. It builds before replacing the running local container. Set `XSOLUTIONS_PORT` in your shell if 8787 is occupied. Preview listens only on your computer.
+
+## Develop, test, release
+
+1. On the desktop, work on `dev` (or merge a feature branch into `dev`), check changes, commit and push.
+2. On the laptop, run `bash update.sh` or `.\website.ps1 update`, then test the local site.
+3. In [GitHub Pull requests](https://github.com/Derek-Sykes/xsolutions-website/pulls), create a PR with **base: main**, **compare: dev**.
+4. Wait for **Check website container** to pass, then merge. Keep the long-lived `dev` branch.
+5. Watch [Actions](https://github.com/Derek-Sykes/xsolutions-website/actions). **Publish and deploy to Oracle** succeeds after verifying the expected revision and page content over HTTPS.
+
+Only main releases deploy. Dev pushes check the site and leave the live version alone. No Action merges branches automatically. Continue working on dev after release; merging main back into dev is optional unless main received separate changes.
+
+## How deployment works
+
+```text
+dev → reviewed merge into main → container checks
+    → build AMD64 + ARM64 images → GitHub Container Registry
+    → publish release manifest with exact image digest
+    → Oracle downloads and checks release → replace website container
+    → GitHub confirms live revision and page content
+```
+
+Oracle's small system timer checks published releases about once a minute. Builds and tests happen on GitHub's machines. Expect a few minutes from merge to completed deployment. Your computers can be off.
+
+The server uses outbound HTTPS and public release/image downloads. No GitHub runner, GitHub credential or additional SSH port is installed on Oracle. Source and image contain only the public site and safe configuration. GitHub uses its temporary workflow token to publish.
+
+The updater accepts only this repository's image digest and current main revision, verifies ARM64/source labels, tests a temporary candidate, then updates the existing `xsolutions` stack. The image contains the website and Caddy configuration. Existing certificate volumes stay attached. If live checks fail after replacement, it restores the previous container configuration. Replacement may cause a brief interruption.
+
+`/version.json` identifies the running source commit and contains no secret. Release tags are `release-<full main commit>` with a `deployment.json` asset. Images are tagged `sha-<full main commit>` and deployed by digest. Superseded main workflows skip release publication/deployment.
 
 ## Files
 
-- `xsolutions-site/`: public HTML, favicon, robots.txt and sitemap.
-- `compose.yaml`: Caddy service, public ports and persistent certificate volumes.
-- `Caddyfile`: domain routing, HTTPS and static-file configuration.
-- `scripts/deploy-static.sh`: manually publish the checked-out static files to the existing Oracle server, with a backup and content verification.
+- `xsolutions-site/`: edit the public website here.
+- `Dockerfile`, `Caddyfile`: production image and HTTPS routing.
+- `Caddyfile.local`, `compose.local.yaml`: local preview on port 8787.
+- `compose.yaml`: Oracle stack using `XSOLUTIONS_IMAGE` and external certificate volumes.
+- `.github/workflows/website.yml`: tests, publication and live verification.
+- `server/`: installed Oracle updater, installer and timer.
+- `scripts/` and root launchers: local build/start/update/check commands.
+- `docs/VALIDATION.md`: actual setup and release test results.
 
-Compose uses the official Caddy image pinned to a tested digest, so this static setup does not need a custom Dockerfile. A future server-side app can add its own Dockerfile and service.
+The Docker context is explicitly limited to image inputs. Repository history and development credentials are excluded.
 
-## Update the existing Oracle website
+## Server operation and recovery
 
-1. Edit/test the site locally, commit and push to GitHub.
-2. SSH into the existing Oracle server as `ubuntu`.
-3. Run:
-
-```bash
-cd /home/ubuntu/xsolutions-website
-git pull --ff-only
-bash scripts/deploy-static.sh --check
-bash scripts/deploy-static.sh
-```
-
-The check previews file changes. The deploy publishes only `xsolutions-site/` into `/opt/xsolutions/xsolutions-site/`; removed source files are also removed from that live public folder. It never publishes `.git`, secrets or the repository's other files. It preserves the running Caddy configuration and certificate volumes. GitHub pushes alone do not update the live website.
-
-The deploy script requires Git, rsync, curl and sudo access on the Ubuntu VM. It checks for a clean checkout and an index.html, creates a dated backup of the current public folder, copies files and verifies that HTTPS returns the expected index content. Review errors before retrying. A plain static copy can briefly expose mixed old/new assets during a larger update.
-
-Backups created by this script are under `/var/backups/xsolutions/deployments/`; prune old copies deliberately as disk usage grows. The existing daily site/config backup remains separate. To undo a code change, push a revert commit and pull/deploy it, or restore an appropriate backup. Database migrations are outside this static workflow.
-
-## Inspect the live service
+Use existing administrator SSH access, then:
 
 ```bash
-cd /opt/xsolutions
-sudo docker compose ps
-sudo docker compose logs --tail 50 web
+sudo systemctl status xsolutions-update.timer
+sudo journalctl -u xsolutions-update.service -n 60 --no-pager
+sudo cat /var/lib/xsolutions-deploy/current.json
+sudo docker compose --env-file /opt/xsolutions/release.env -f /opt/xsolutions/compose.yaml ps
 ```
 
-Website file edits do not need a Caddy restart. Compose/Caddyfile changes require a separate reviewed deployment; this script intentionally deploys only public static files. Before changing Caddy configuration, back it up, validate it and reload it. Do not remove the named certificate volumes with `docker compose down -v`.
+Check immediately: `sudo systemctl start xsolutions-update.service`. Pause: `sudo systemctl stop xsolutions-update.timer` (use `disable --now` to persist across reboot). Resume: `sudo systemctl enable --now xsolutions-update.timer`.
 
-## Local preview
+For content rollback, revert the unwanted change on dev and merge the correction into main. Automatic failure recovery retains the previous Compose/image settings under `/var/lib/xsolutions-deploy/`; the initial static definition is saved as `original-compose.yaml`.
 
-With Python installed, run from the repository root:
+The existing daily backup still saves `/opt/xsolutions`. Current site content is now in versioned GitHub source and images, not the legacy static folder on the VM. Preserve both certificate volumes; never run `down -v` or a global Docker prune. Old images can be removed deliberately when no longer needed; retention is not automated yet.
 
-```bash
-python -m http.server 8765 --directory xsolutions-site --bind 127.0.0.1
-```
+HTML/assets, Dockerfile and Caddyfile changes travel through the image. Changes to the installed updater or production Compose require an administrator to pull reviewed source and rerun `sudo bash server/install.sh`. Those server scripts are not silently executed from GitHub every release. The manual static-copy script is retired.
 
-Open http://127.0.0.1:8765. This preview is local HTTP; production HTTPS is handled by Caddy.
+## Replacement server setup
 
-## Fresh-server deployment
+The installer targets an existing `/opt/xsolutions` deployment with Docker/Compose and the named Caddy volumes. Recreate that baseline first when recovering a lost VM, restore routing/access, clone this repository and run `sudo bash server/install.sh`. The updater then fetches the latest tested release. Set Actions variable `ORACLE_HOST` to the replacement public IP for TLS-verified origin checks.
 
-On a configured Linux host with Docker/Compose, point the domain at it, allow ports 80 and 443, then run `docker compose up -d` from this repository. Caddy obtains certificates once the domain is reachable. The existing Oracle deployment retains its original directory and volumes; do not start a second competing web stack from the server clone.
+The GHCR package must be public for anonymous downloads, matching the public source. No Actions secret is required. The `production` environment is limited to main. Main requires the container check and a pull request; repository administrators can change those settings.
 
-The repository is public and contains no administrator credentials. The Oracle server clones it over HTTPS with anonymous read access; no GitHub token or deploy key is needed. Administrative SSH credentials stay outside the repository. Changes to paid services, application hosting or automatic deployment are not part of this baseline.
+References: [GitHub container registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry), [Docker multi-platform builds in Actions](https://docs.docker.com/build/ci/github-actions/multi-platform/).

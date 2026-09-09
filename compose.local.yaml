@@ -1,0 +1,16 @@
+name: xsolutions-local
+services:
+  web:
+    build:
+      context: .
+      args:
+        REVISION: ${XSOLUTIONS_REVISION:-local}
+    image: xsolutions-website:local
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile.local", "--adapter", "caddyfile"]
+    ports:
+      - "127.0.0.1:${XSOLUTIONS_PORT:-8787}:80"
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "5m"
+        max-file: "2"
