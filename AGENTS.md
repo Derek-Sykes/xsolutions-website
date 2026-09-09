@@ -1,6 +1,6 @@
 # Website workflow
 
-Read README.md and docs/VALIDATION.md before changes. The public website lives in xsolutions-site/. Use dev for development; main is the explicit release gate and deploys to Oracle automatically. Never merge dev into main without release authorization. The current workflow-setup request authorizes the initial integration and repeated end-to-end release tests.
+Read README.md and docs/VALIDATION.md before changes. The public website lives in xsolutions-site/. Use dev for development; main is the explicit release gate and deploys to Oracle automatically. Never merge dev into main without release authorization. Initial workflow release tests were completed on September 9, 2026; their authorization is not standing permission for future releases.
 
 Keep credentials, machine-specific SSH paths, business research and private files out of this public repository and image. Use the explicit Docker context allowlist. Preserve existing Caddy certificate volumes and unrelated Docker resources. Production uses ARM64; release images support ARM64 and AMD64.
 

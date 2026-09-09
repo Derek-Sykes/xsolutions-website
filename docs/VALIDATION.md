@@ -24,3 +24,13 @@
 - The replacement landing page was excluded from these infrastructure tests. Derek subsequently authorized publishing the finished page after workflow tests and builder QA; that is a separate reviewed release.
 
 Main is protected with a required pull request and `Check website container`, including administrators. Production accepts main only. Repository auto-merge is off. The updater's failure rollback exists but has not been fault-injected against the production server.
+
+## Fourth release: exact-revision discovery
+
+- PR #4 merged at `6f4fbc5264701c91f044ed420ef8a103a1854b69`; [workflow 34320877029](https://github.com/Derek-Sykes/xsolutions-website/actions/runs/34320877029) succeeded.
+- The refined timer first observed that main was still building and retained the healthy previous version, then automatically deployed the exact published revision. No manual deployment command was used.
+- Oracle is healthy on image digest `sha256:f3ec686fd9b97e9b1b0ce23f0402567e9eddb4749f335f4413079ef82c67bdb7`. The timer is enabled and active.
+- Both Caddy volumes retain creation time `2026-09-09T05:47:31Z`, before the first automated release. HTTPS apex returns the page; www returns 301 to the apex; HTTP returns 308 to HTTPS. The actual domain also loaded normally in Chrome.
+- Four main release workflows passed. Three were placeholder promotion/content tests; the fourth verified refined discovery. Dev-only pushes skipped production deployment. The visible placeholder design is unchanged and the test comment is gone.
+
+Workflow setup is complete. The separate builder may now integrate its checked landing page on dev for the subsequently authorized live release. Website-specific functional/visual QA and its final deployed revision will be recorded separately from these infrastructure tests.
