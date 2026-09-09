@@ -12,8 +12,15 @@ work=$(mktemp -d "$state/check.XXXXXX")
 candidate="xsolutions-candidate-$$"
 cleanup() { docker rm -f "$candidate" >/dev/null 2>&1 || true; rm -rf -- "$work"; }
 trap cleanup EXIT
-curl -fLsS --connect-timeout 15 --max-time 60 --retry 2 \
-  "https://github.com/$repo/releases/latest/download/deployment.json" -o "$work/deployment.json"
+main=$(timeout 30 git ls-remote "https://github.com/$repo.git" refs/heads/main | cut -f1)
+[[ "$main" =~ ^[0-9a-f]{40}$ ]] || { echo 'Cannot determine current main revision.' >&2; exit 1; }
+if [[ -f "$state/current.json" ]] && python3 -c 'import json,sys; sys.exit(json.load(open(sys.argv[1]))["revision"] != sys.argv[2])' "$state/current.json" "$main"; then exit 0; fi
+# Address the exact commit, avoiding cached latest redirects and negative responses
+# observed while an image was still being published.
+status=$(curl -LsS --connect-timeout 15 --max-time 60 --retry 2 -w '%{http_code}' \
+  "https://github.com/$repo/releases/download/release-$main/deployment.json?check=$(date +%s)" -o "$work/deployment.json")
+if [[ "$status" == 404 ]]; then echo 'Current main is still building; keeping the healthy website.'; exit 0; fi
+[[ "$status" == 200 ]] || { echo "Release download failed (HTTP $status)." >&2; exit 1; }
 mapfile -t release < <(python3 - "$work/deployment.json" <<'PY'
 import json,re,sys
 from pathlib import Path
@@ -29,7 +36,6 @@ PY
 revision=${release[0]}
 image=${release[1]}
 if [[ -f "$state/current.json" ]] && cmp -s "$state/current.json" "$work/deployment.json"; then exit 0; fi
-main=$(git ls-remote "https://github.com/$repo.git" refs/heads/main | cut -f1)
 [[ "$revision" == "$main" ]] || { echo 'Waiting for a release of the current main revision.'; exit 0; }
 docker pull "$image"
 [[ $(docker image inspect "$image" --format '{{.Architecture}}') == arm64 ]]
