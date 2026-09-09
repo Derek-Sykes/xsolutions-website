@@ -33,4 +33,14 @@ Main is protected with a required pull request and `Check website container`, in
 - Both Caddy volumes retain creation time `2026-09-09T05:47:31Z`, before the first automated release. HTTPS apex returns the page; www returns 301 to the apex; HTTP returns 308 to HTTPS. The actual domain also loaded normally in Chrome.
 - Four main release workflows passed. Three were placeholder promotion/content tests; the fourth verified refined discovery. Dev-only pushes skipped production deployment. The visible placeholder design is unchanged and the test comment is gone.
 
-Workflow setup is complete. The separate builder may now integrate its checked landing page on dev for the subsequently authorized live release. Website-specific functional/visual QA and its final deployed revision will be recorded separately from these infrastructure tests.
+## Finished landing-page release
+
+- The user separately authorized publication after page QA. Tested dev revision `6e6210762c2b472e734caff2466c754a91fb6329` passed container checks, byte equality for all seven public files, JavaScript syntax, mobile navigation and FAQ interaction. Layouts from 320 to 1440 pixels had no horizontal overflow in the builder's browser review.
+- [PR #5](https://github.com/Derek-Sykes/xsolutions-website/pull/5) passed its required check and merged normally into main at `4a25f98d4e28717b4cc6f2ae734a20410bfc7083`.
+- [Workflow 34322381764](https://github.com/Derek-Sykes/xsolutions-website/actions/runs/34322381764) was triggered by that merge and succeeded. Oracle's timer automatically deployed and verified the release at 07:09:46 UTC on September 9. No manual workflow dispatch or server copy was used.
+- Live image: `ghcr.io/derek-sykes/xsolutions-website@sha256:1c169374d109ba878adfca9552c2c473e131d0f80da910d94a07d967555a1ab1`. The container is healthy and the updater timer is enabled/active.
+- Independent HTTPS checks confirmed the exact main revision and byte equality for all seven public files, including CSS, JavaScript and the generated WebP. All internal fragment destinations exist. www redirects to the apex and HTTP redirects to HTTPS.
+- The live page loaded normally in Chrome with its image. Contact-section navigation, the mobile menu opening/closing after navigation, and FAQ expansion passed. At 390 pixels there was no horizontal overflow; the browser error log was empty.
+- Email and phone destinations are `xsolutionsmd@gmail.com` and `+14437975882`. Their links were verified without sending an email or placing a call. There is no inquiry form or backend; inbox delivery and call answering were not tested.
+
+Five automatic main releases succeeded, including the actual finished page. Workflow setup and initial page publication are complete. Future main merges still require separate release authorization.
