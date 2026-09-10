@@ -51,11 +51,13 @@ Oracle's small system timer checks main about once a minute and downloads that e
 
 The server uses outbound HTTPS and public release/image downloads. No GitHub runner, GitHub credential or additional SSH port is installed on Oracle. Source and image contain only the public site and safe configuration. GitHub uses its temporary workflow token to publish.
 
-The updater accepts only this repository's image digest and current main revision, verifies ARM64/source labels, tests the production HTTP configuration in a temporary candidate, then updates the existing `xsolutions` stack. The image contains the website and its internal static-file server. If checks through the public HTTPS gateway fail after replacement, it restores the previous website container configuration. Replacement may cause a brief interruption for this website.
+The updater accepts only this repository's image digest and current main revision, verifies ARM64/source labels, tests the production HTTP configuration in a temporary candidate, then updates the existing `xsolutions` stack. The image contains the website and its internal static-file server. A failed or interrupted deployment restores the previous website configuration and release state, including when checks through the public HTTPS gateway fail. If recovery itself fails, the journal identifies the retained recovery directory. Replacement may cause a brief interruption for this website.
 
 The independent `xsolutions-gateway` stack in `/opt/xsolutions-gateway` owns public ports 80 and 443 and the existing `xsolutions_caddy_data` / `xsolutions_caddy_config` volumes. It forwards `xsolutionsmd.com` requests to `xsolutions-site:80` on the external `xsolutions-proxy` Docker network. The company website keeps Compose project `xsolutions`, service `web`, and the unique network alias `xsolutions-site`. It publishes no host ports and mounts no certificate volumes. The gateway handles www-to-apex and HTTP-to-HTTPS redirects.
 
 Other website containers can join that network with their own unique aliases and gateway domain rules. Updating the company website never updates the shared gateway or another website. Gateway configuration is installed and reloaded separately; see [gateway operations](server/gateway/README.md).
+
+The backend, local preview and temporary checks use in-memory `/data` and `/config` mounts for Caddy's disposable internal state. Replacing them therefore does not accumulate anonymous Caddy volumes. The shared gateway alone retains the durable certificate volumes.
 
 `/version.json` identifies the running source commit and contains no secret. Release tags are `release-<full main commit>` with a `deployment.json` asset. Images are tagged `sha-<full main commit>` and deployed by digest. Superseded main workflows skip release publication/deployment.
 

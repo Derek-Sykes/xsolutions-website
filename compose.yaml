@@ -3,6 +3,9 @@ services:
   web:
     image: ${XSOLUTIONS_IMAGE:?Use the installed release updater or set XSOLUTIONS_IMAGE to a release digest}
     restart: unless-stopped
+    tmpfs:
+      - /data
+      - /config
     networks:
       proxy:
         aliases:
