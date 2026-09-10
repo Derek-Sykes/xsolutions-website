@@ -1,5 +1,13 @@
 # Workflow validation
 
+## Manual Dylan dev gateway route — September 10, 2026
+
+- Added only `dev-demo.xsolutionsmd.com` to the shared gateway for the separately authorized dev environment: public root to `dylan-dev-web:8080`, owner portal/API/OAuth to `dylan-dev-admin:8082`, and exact `/admin/version.json` rewrite for the booking release receipt.
+- The Dylan repository's `scripts/test-dev-proxy.py` extracted this route block and passed actual isolated HTTPS routing, trusted temporary certificate, public/admin assets, redirects, version metadata, authentication, CSRF, OAuth callback URL and public-listener isolation checks. No live credentials or existing app volumes entered the test.
+- Backed up the installed gateway file, validated the additive configuration inside the existing gateway, and reloaded it gracefully. Public HTTPS certificate validation succeeded for the new hostname before its first image was ready (expected 502 at that stage).
+- Immediately after reload, company revision remained `cd90c70e31519a461fa05188e0f6373fed298ae3`, demo revision remained `ad5313a07d05f61e829ba6e288a09d433c35505d`, and all three existing container IDs were preserved: company `02454210ea73`, demo `d4a28c919b7b`, gateway `bf60d8c05cc3`.
+- This is a separately installed gateway change committed on dev. No company main merge or company image release was performed. Live dev application release evidence belongs to the Dylan repository's booking validation record.
+
 ## First release — September 9, 2026
 
 - PR #1 merged dev into main at `b4ce895a91631a72a2964a18fc8f64c64d94474f`.

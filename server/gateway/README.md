@@ -7,8 +7,11 @@ Caddy owns the server's public TCP ports 80 and 443 and manages HTTPS. Website c
 | `xsolutionsmd.com` | `xsolutions-site:80` |
 | `www.xsolutionsmd.com` | Redirect to the company domain |
 | `demo.xsolutionsmd.com` | `dylan-demo:8080` |
+| `dev-demo.xsolutionsmd.com` | Public: `dylan-dev-web:8080`; owner portal `/admin/` and owner APIs/OAuth: `dylan-dev-admin:8082` |
 
 The installed gateway lives at `/opt/xsolutions-gateway`. Its configuration is a separate administrator-managed deployment. Ordinary company or demo image releases never install or overwrite these files. The website updaters have independent release state and rollback paths.
+
+The dev booking environment is released only by the **Deploy dev to server** manual workflow in `Derek-Sykes/dylans-lawn-care-demo`. Dev pushes do not deploy it. The exact `/admin/version.json` route rewrites to the booking service's `/version.json` so both published images and the manual run receipt can be verified through HTTPS. Its data, private configuration and update recovery belong to that repository's [dev operating guide](https://github.com/Derek-Sykes/dylans-lawn-care-demo/blob/dev/docs/DEV_DEPLOYMENT.md). The existing company and demo release paths remain independent.
 
 ## Change a route or add a website
 

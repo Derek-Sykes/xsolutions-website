@@ -10,6 +10,20 @@ demo.xsolutionsmd.com {
     reverse_proxy dylan-demo:8080
 }
 
+dev-demo.xsolutionsmd.com {
+    handle /admin/version.json {
+        rewrite * /version.json
+        reverse_proxy dylan-dev-admin:8082
+    }
+    @dev_admin path /admin /admin/* /admin.css /admin.js /api/admin/* /oauth/*
+    handle @dev_admin {
+        reverse_proxy dylan-dev-admin:8082
+    }
+    handle {
+        reverse_proxy dylan-dev-web:8080
+    }
+}
+
 # Gateway health is local to this container, never published on the VM.
 http://127.0.0.1:8082 {
     respond /healthz "ok" 200
