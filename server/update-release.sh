@@ -37,13 +37,17 @@ revision=${release[0]}
 image=${release[1]}
 if [[ -f "$state/current.json" ]] && cmp -s "$state/current.json" "$work/deployment.json"; then exit 0; fi
 [[ "$revision" == "$main" ]] || { echo 'Waiting for a release of the current main revision.'; exit 0; }
+docker network inspect xsolutions-proxy >/dev/null || {
+  echo 'Required xsolutions-proxy network is missing; keeping the existing deployment.' >&2
+  exit 1
+}
 docker pull "$image"
 [[ $(docker image inspect "$image" --format '{{.Architecture}}') == arm64 ]]
 [[ $(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}') == "$revision" ]]
 [[ $(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.source"}}') == "https://github.com/$repo" ]]
 docker run --rm --entrypoint caddy "$image" validate --config /etc/caddy/Caddyfile --adapter caddyfile
 # Exercise the candidate without touching public ports or certificate storage.
-docker run -d --name "$candidate" -p 127.0.0.1::80 "$image" caddy run --config /etc/caddy/Caddyfile.local --adapter caddyfile
+docker run -d --name "$candidate" -p 127.0.0.1::80 "$image"
 port=$(docker port "$candidate" 80/tcp | awk -F: '{print $NF}')
 ready=false
 for attempt in $(seq 1 30); do

@@ -3,21 +3,16 @@ services:
   web:
     image: ${XSOLUTIONS_IMAGE:?Use the installed release updater or set XSOLUTIONS_IMAGE to a release digest}
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - caddy_data:/data
-      - caddy_config:/config
+    networks:
+      proxy:
+        aliases:
+          - xsolutions-site
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
-volumes:
-  caddy_data:
-    name: xsolutions_caddy_data
-    external: true
-  caddy_config:
-    name: xsolutions_caddy_config
+networks:
+  proxy:
+    name: xsolutions-proxy
     external: true
