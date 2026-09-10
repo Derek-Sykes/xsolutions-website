@@ -1,6 +1,6 @@
 # X Solutions website
 
-The website at **https://xsolutionsmd.com**, served by a versioned Caddy container on Oracle. Work on `dev`; merge `dev` into `main` when you want to publish.
+The website at **https://xsolutionsmd.com**, served by a versioned website container on Oracle. The deployment configuration uses a separate, shared Caddy gateway for HTTPS and domain routing. Work on `dev`; merge `dev` into `main` when you want to publish. See [validation](docs/VALIDATION.md) for what has actually been deployed and tested.
 
 ## Start on a desktop or laptop
 
@@ -51,18 +51,25 @@ Oracle's small system timer checks main about once a minute and downloads that e
 
 The server uses outbound HTTPS and public release/image downloads. No GitHub runner, GitHub credential or additional SSH port is installed on Oracle. Source and image contain only the public site and safe configuration. GitHub uses its temporary workflow token to publish.
 
-The updater accepts only this repository's image digest and current main revision, verifies ARM64/source labels, tests a temporary candidate, then updates the existing `xsolutions` stack. The image contains the website and Caddy configuration. Existing certificate volumes stay attached. If live checks fail after replacement, it restores the previous container configuration. Replacement may cause a brief interruption.
+The updater accepts only this repository's image digest and current main revision, verifies ARM64/source labels, tests the production HTTP configuration in a temporary candidate, then updates the existing `xsolutions` stack. The image contains the website and its internal static-file server. A failed or interrupted deployment restores the previous website configuration and release state, including when checks through the public HTTPS gateway fail. If recovery itself fails, the journal identifies the retained recovery directory. Replacement may cause a brief interruption for this website.
+
+The independent `xsolutions-gateway` stack in `/opt/xsolutions-gateway` owns public ports 80 and 443 and the existing `xsolutions_caddy_data` / `xsolutions_caddy_config` volumes. It forwards `xsolutionsmd.com` requests to `xsolutions-site:80` on the external `xsolutions-proxy` Docker network. The company website keeps Compose project `xsolutions`, service `web`, and the unique network alias `xsolutions-site`. It publishes no host ports and mounts no certificate volumes. The gateway handles www-to-apex and HTTP-to-HTTPS redirects.
+
+Other website containers can join that network with their own unique aliases and gateway domain rules. Updating the company website never updates the shared gateway or another website. Gateway configuration is installed and reloaded separately; see [gateway operations](server/gateway/README.md).
+
+The backend, local preview and temporary checks use in-memory `/data` and `/config` mounts for Caddy's disposable internal state. Replacing them therefore does not accumulate anonymous Caddy volumes. The shared gateway alone retains the durable certificate volumes.
 
 `/version.json` identifies the running source commit and contains no secret. Release tags are `release-<full main commit>` with a `deployment.json` asset. Images are tagged `sha-<full main commit>` and deployed by digest. Superseded main workflows skip release publication/deployment.
 
 ## Files
 
 - `xsolutions-site/`: edit the public website here.
-- `Dockerfile`, `Caddyfile`: production image and HTTPS routing.
+- `Dockerfile`, `Caddyfile`: production image and internal HTTP static-file serving.
 - `Caddyfile.local`, `compose.local.yaml`: local preview on port 8787.
-- `compose.yaml`: Oracle stack using `XSOLUTIONS_IMAGE` and external certificate volumes.
+- `compose.yaml`: Oracle website stack using `XSOLUTIONS_IMAGE` and the external proxy network.
 - `.github/workflows/website.yml`: tests, publication and live verification.
-- `server/`: installed Oracle updater, installer and timer.
+- `server/`: installed Oracle website updater, installer and timer.
+- `server/gateway/`: separately managed shared HTTPS gateway and migration instructions.
 - `scripts/` and root launchers: local build/start/update/check commands.
 - `docs/VALIDATION.md`: actual setup and release test results.
 
@@ -83,13 +90,19 @@ Check immediately: `sudo systemctl start xsolutions-update.service`. Pause: `sud
 
 For content rollback, revert the unwanted change on dev and merge the correction into main. Automatic failure recovery retains the previous Compose/image settings under `/var/lib/xsolutions-deploy/`; the initial static definition is saved as `original-compose.yaml`.
 
-The existing daily backup still saves `/opt/xsolutions`. Current site content is now in versioned GitHub source and images, not the legacy static folder on the VM. Preserve both certificate volumes; never run `down -v` or a global Docker prune. Old images can be removed deliberately when no longer needed; retention is not automated yet.
+Current site content is in versioned GitHub source and images, not the legacy static folder on the VM. Preserve `/opt/xsolutions`, the shared gateway directory, and both existing certificate volumes in server backups; verify backup coverage as part of the initial migration. Never run `down -v` or a global Docker prune. Old images can be removed deliberately when no longer needed; retention is not automated yet.
 
-HTML/assets, Dockerfile and Caddyfile changes travel through the image. Changes to the installed updater or production Compose require an administrator to pull reviewed source and rerun `sudo bash server/install.sh`. Those server scripts are not silently executed from GitHub every release. The manual static-copy script is retired.
+HTML/assets, Dockerfile and the internal Caddyfile changes travel through the image. Changes to the installed updater or production Compose require an administrator to pull reviewed source and rerun `sudo bash server/install.sh`. Those server scripts and `server/gateway/` are not silently executed from GitHub every release. The manual static-copy script is retired.
+
+### Initial shared-gateway migration
+
+An existing single-container deployment must be migrated before it can run these backend-only images. Pause the website updater, back up the installed Compose/release settings and certificate volumes, install the shared gateway and `xsolutions-proxy` network, then install this updater with `sudo bash server/install.sh --paused`. This option leaves the timer disabled until the coordinated gateway/website replacement and HTTPS checks have passed. Follow the [gateway migration instructions](server/gateway/README.md) for the actual cutover and recovery sequence. Do not start a gateway on public ports while the old website container still owns them.
+
+The installer retains the first `original-compose.yaml` backup and requires an existing `/opt/xsolutions/compose.yaml` and `xsolutions-proxy` network. After migration verification, run `sudo systemctl enable --now xsolutions-update.timer`. Later website releases use the usual main workflow. Reverting all the way to an image from before this migration also requires its matching legacy deployment configuration; ordinary content rollback should use a new release that retains the backend architecture.
 
 ## Replacement server setup
 
-The installer targets an existing `/opt/xsolutions` deployment with Docker/Compose and the named Caddy volumes. Recreate that baseline first when recovering a lost VM, restore routing/access, clone this repository and run `sudo bash server/install.sh`. The updater then fetches the latest tested release. Set Actions variable `ORACLE_HOST` to the replacement public IP for TLS-verified origin checks.
+Restore Docker/Compose, the shared gateway configuration, certificate volumes, and `xsolutions-proxy` network first when recovering a lost VM. Restore `/opt/xsolutions/compose.yaml` and `release.env`, clone this repository and run `sudo bash server/install.sh --paused`. Start the website and gateway using their restored configuration, verify HTTPS, then enable the updater timer to fetch the latest tested release. Set Actions variable `ORACLE_HOST` to the replacement public IP for TLS-verified origin checks.
 
 The GHCR package must be public for anonymous downloads, matching the public source. No Actions secret is required. The `production` environment is limited to main. Main requires the container check and a pull request; repository administrators can change those settings.
 

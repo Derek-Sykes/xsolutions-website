@@ -1,4 +1,5 @@
-xsolutionsmd.com {
+# Internal HTTP backend. The independently managed gateway owns public HTTPS.
+:80 {
     root * /srv
     encode zstd gzip
     header {
@@ -15,8 +16,4 @@ xsolutionsmd.com {
 :8081 {
     root * /srv
     file_server
-}
-
-www.xsolutionsmd.com {
-    redir https://xsolutionsmd.com{uri} permanent
 }

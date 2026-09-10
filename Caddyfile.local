@@ -1,7 +1,12 @@
 :80 {
     root * /srv
     encode zstd gzip
-    header Cache-Control "no-store"
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy strict-origin-when-cross-origin
+        X-Frame-Options DENY
+        Cache-Control "no-store"
+    }
     file_server
 }
 :8081 {

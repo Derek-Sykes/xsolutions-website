@@ -10,6 +10,9 @@ services:
     ports:
       - "127.0.0.1:${XSOLUTIONS_PORT:-8787}:80"
     restart: unless-stopped
+    tmpfs:
+      - /data
+      - /config
     logging:
       options:
         max-size: "5m"

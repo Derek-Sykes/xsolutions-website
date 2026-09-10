@@ -44,3 +44,26 @@ Main is protected with a required pull request and `Check website container`, in
 - Email and phone destinations are `xsolutionsmd@gmail.com` and `+14437975882`. Their links were verified without sending an email or placing a call. There is no inquiry form or backend; inbox delivery and call answering were not tested.
 
 Five automatic main releases succeeded, including the actual finished page. Workflow setup and initial page publication are complete. Future main merges still require separate release authorization.
+
+## Business phone update — September 9, 2026
+
+- The user explicitly authorized this small fix to progress through dev verification and main merge without another approval. Displayed phone is now `667-383-5993`; the tap-to-call destination is `tel:+16673835993`, superseding the earlier release's number.
+- Tested dev revision `ee30d9d62a2253421c08878917321f312e87462b` passed local `website.ps1 check` (container configuration, served HTML and core assets, revision identity and Git-source exclusion). A separate assertion confirmed the new phone text and link and absence of the old number in the page. No call was placed.
+- Dev push [workflow 34369884555](https://github.com/Derek-Sykes/xsolutions-website/actions/runs/34369884555) and [PR #6](https://github.com/Derek-Sykes/xsolutions-website/pull/6) checks passed before the normal protected merge to main `faf997523c1f84b25d79a55ee4d8c1bcd9e74dfe`.
+- Main [workflow 34369948834](https://github.com/Derek-Sykes/xsolutions-website/actions/runs/34369948834) succeeded, including automatic Oracle deployment and live verification. Independent HTTPS requests confirmed the exact revision, complete HTML equality with the tested page, and the new displayed number and tap-to-call link.
+- This was a phone-text/link substitution with no layout or behavior changes; no new browser layout review was performed. Call answering and external advertising accounts were not tested or changed.
+
+## Shared gateway backend preparation — September 10, 2026
+
+- Derek authorized a shared reverse proxy on Oracle, keeping the company domain on this website and hosting separately deployed demo containers on subdomains. This task includes the coordinated server migration and tested main release; it does not establish standing authorization for later releases.
+- Implementation revision `b3d5d8c079e9174aa7ccec5dd086a42b7f535582` passed `website.ps1 check` on Docker Desktop AMD64. The image was built with that exact revision. Both Caddy configurations validated, every source public file matched its served bytes, `/version.json` matched the revision with `Cache-Control: no-store`, the internal `:8081` health endpoint responded, and Git source stayed excluded.
+- An isolated Docker network and temporary Caddy proxy routed `Host: xsolutions.test` to the production backend through alias `xsolutions-site:80`. The HTML matched and security/version cache headers survived the proxy. A separate local-preview container also returned the matching page with development no-cache headers. All temporary test containers and the test network were removed.
+- The rendered production Compose retained project `xsolutions` and service `web`, had no public port bindings or certificate mounts, and referenced external network `xsolutions-proxy` with unique alias `xsolutions-site`. Shell syntax and whitespace checks passed. Website content and launcher commands did not change.
+- The updater now preflights the shared network and tests the production HTTP configuration. Its existing HTTPS live comparison and previous-Compose/image rollback remain in place. The installer preserves the original deployment backup and supports `--paused` for the coordinated gateway migration. Production rollback has not been fault-injected by these local checks.
+- These are local preparation results only. Gateway installation, certificate preservation, ARM64 publication and live migration require their own verified release record below.
+
+### Recovery and disposable backend storage refinement
+
+- Implementation `ec448cc682e755984fa8cfd261dbabb06711304f` adds transaction-wide failure/TERM recovery, atomic release-state publication, retained recovery files if rollback fails, and a two-minute systemd stop allowance. The independently managed gateway is unchanged by this commit.
+- `python3 scripts/test-updater.py` passed eight isolated Linux cases using the actual Bash updater with temporary deployment paths and simulated Docker/network commands: successful release, failed Compose start, HTTPS revision mismatch, configuration-write failure, state-write failure, TERM during deployment, TERM immediately after state rename, and failed rollback. Failed releases restored the previous configuration/state; failed rollback retained the recovery directory. This is fault injection in a local harness, not on Oracle.
+- Production, preview, candidate and validation containers now use tmpfs at `/data` and `/config`. The container/proxy suite passed again for this working tree before commit (image revision label `b4552316dd86c567e89fab28826fd123e0cde0e5`); inspection confirmed the tested backend had no Docker volume mounts. Rendered production Compose confirmed both tmpfs mounts without public ports or persistent backend volumes. The CI container-check job now also runs the recovery harness.
