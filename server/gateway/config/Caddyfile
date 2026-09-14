@@ -24,6 +24,10 @@ dev-demo.xsolutionsmd.com {
     }
 }
 
+server.xsolutionsmd.com {
+    reverse_proxy server-room:8080
+}
+
 # Gateway health is local to this container, never published on the VM.
 http://127.0.0.1:8082 {
     respond /healthz "ok" 200

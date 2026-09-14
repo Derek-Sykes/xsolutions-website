@@ -1,5 +1,12 @@
 # Workflow validation
 
+## Private Server Room gateway route — September 14, 2026
+
+- Added `server.xsolutionsmd.com` with upstream `server-room:8080` for the separately authorized resource dashboard. The canonical and installed gateway configuration match.
+- The existing gateway validated the complete configuration and was reloaded gracefully. The new hostname has valid HTTPS and serves the dashboard's sign-in page; its application enforces authentication for measurements and downloads.
+- After the dashboard's initial startup repair, the five pre-existing containers retained their exact identities, images, networks and mounts and remained healthy. Company revision remains `cd90c70e31519a461fa05188e0f6373fed298ae3`, public demo `ed372fb16f0fd95360c47b7b1328d09b886d2e0b`, and Dylan dev `c9e94aa21f4d5e8753af9d536a08cd4d0bb6cf58`. The shared certificate volumes remain attached to the original gateway.
+- This is a separately installed gateway change on dev. No company main merge or company image release was performed. Dashboard release and authenticated behavior evidence are maintained in its private repository.
+
 ## Manual Dylan dev gateway route — September 10, 2026
 
 - Added only `dev-demo.xsolutionsmd.com` to the shared gateway for the separately authorized dev environment: public root to `dylan-dev-web:8080`, owner portal/API/OAuth to `dylan-dev-admin:8082`, and exact `/admin/version.json` rewrite for the booking release receipt.
